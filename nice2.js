@@ -107,3 +107,5 @@ function update(data) {
   const text = flag ? "Profit ($)" : "Revenue ($)"
   yLabel.text(text)
 }
+
+// Update the chart title
