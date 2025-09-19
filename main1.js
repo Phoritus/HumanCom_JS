@@ -62,7 +62,6 @@ function สร้างรูปX() {
       ctx.shadowColor = 'rgba(0,0,0,0.3)';
       ctx.shadowBlur = 10;
       ctx.shadowOffsetX = 5;
-      CSSTransformComponent.
       ctx.shadowOffsetY = 5;
       
       ctx.moveTo(100, 100);
