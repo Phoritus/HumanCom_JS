@@ -3,16 +3,22 @@ name: Vercel Preview Deployment
 env:
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+  APP_NAME: ${{ github.event.pull_request.head.ref }}-${{ github.event.pull_request.number }}
 
 on:
-  push:
+  pull_request:
     branches:
       - main
-  pull_request:
+    types: [opened, reopened, synchronize, closed]
 
 jobs:
   Deploy-Preview:
+    if: ${{ github.event.action != 'closed' }}
     runs-on: ubuntu-latest
+    environment:
+      name: pr-${{ github.event.pull_request.number }}
+      # https://test-vercel-ci-cd.vercel.app/
+      url: ${{ steps.vercel-deploy.outputs.deployment_url }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -24,4 +30,23 @@ jobs:
       - name: Build Project Artifacts
         run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
       - name: Deploy Project Artifacts to Vercel
-        run: vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
+        id: vercel-deploy
+        run: |
+          deployment_url=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
+          echo "deployment_url=$deployment_url" >> $GITHUB_OUTPUT
+
+  Clean-Preview-Deployment:
+    if: ${{ github.event.action == 'closed' }}
+    runs-on: ubuntu-latest
+    permissions:
+      deployments: write
+      contents: read
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - name: Delete GitHub Environment
+        uses: strumwolf/delete-deployment-environment@a4825dd9648c57da8437a4885c3fcad58beac69c # v3.0.0
+        with:
+          token: ${{ secrets.GH_PAT }}
+          environment: pr-${{ github.event.pull_request.number }}
+          onlyRemoveDeployments: false
