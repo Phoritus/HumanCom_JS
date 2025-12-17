@@ -7,9 +7,13 @@ env:
 
 on:
   pull_request:
+    branches:
+      - main
+    types: [opened, reopened, synchronize, closed]
 
 jobs:
   Deploy-Preview:
+    if: ${{ github.event.action != 'closed' }}
     runs-on: ubuntu-latest
     environment:
       name: pr-${{ github.event.pull_request.number }}
@@ -28,5 +32,21 @@ jobs:
       - name: Deploy Project Artifacts to Vercel
         id: vercel-deploy
         run: |
-          deployment_url=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }} --name ${{ env.APP_NAME }})
+          deployment_url=$(vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }})
           echo "deployment_url=$deployment_url" >> $GITHUB_OUTPUT
+
+  Clean-Preview-Deployment:
+    if: ${{ github.event.action == 'closed' }}
+    runs-on: ubuntu-latest
+    permissions:
+      deployments: write
+      contents: read
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - name: Delete GitHub Environment
+        uses: strumwolf/delete-deployment-environment@a4825dd9648c57da8437a4885c3fcad58beac69c # v3.0.0
+        with:
+          token: ${{ secrets.GH_PAT }}
+          environment: pr-${{ github.event.pull_request.number }}
+          onlyRemoveDeployments: false
