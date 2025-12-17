@@ -3,16 +3,18 @@ name: Vercel Preview Deployment
 env:
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+  APP_NAME: ${{ github.event.pull_request.head.ref }}-${{ github.event.pull_request.number }}
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
 
 jobs:
   Deploy-Preview:
     runs-on: ubuntu-latest
+    environment:
+      name: pr-${{ github.event.pull_request.number }}
+      # https://test-vercel-ci-cd.vercel.app/
+      url: https://${{ env.APP_NAME }}.vercel.app
     steps:
       - name: Checkout
         uses: actions/checkout@v4
